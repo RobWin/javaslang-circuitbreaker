@@ -11,7 +11,7 @@ jobs:
     name: "Gradle wrapper validation"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.2.0
+      - uses: actions/checkout@v4.2.2
       - uses: gradle/wrapper-validation-action@v3.5.0
   build:
     name: "Build and publish"
@@ -21,7 +21,7 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4.2.0
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: Set up JDK 17
