@@ -18,6 +18,7 @@ package io.github.resilience4j.timelimiter.configure;
 import io.github.resilience4j.TestApplication;
 import io.github.resilience4j.TestDummyService;
 import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,12 +31,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = TestApplication.class)
 public class TimeLimiterAspectSpelResolverTest {
+
     @Autowired
     @Qualifier("timeLimiterDummyService")
     TestDummyService testDummyService;
 
     @Autowired
     TimeLimiterRegistry registry;
+
+    @Before
+    public void setUp() {
+        registry.getAllTimeLimiters().forEach(timeLimiter -> registry.remove(timeLimiter.getName()));
+    }
 
     @Test
     public void testSpel() {

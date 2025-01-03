@@ -36,6 +36,7 @@ import io.github.resilience4j.utils.RxJava3OnClasspathCondition;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.*;
 
 import java.util.List;
@@ -56,6 +57,12 @@ public abstract class AbstractTimeLimiterConfigurationOnMissingBean {
     public CompositeCustomizer<TimeLimiterConfigCustomizer> compositeTimeLimiterCustomizer(
         @Autowired(required = false) List<TimeLimiterConfigCustomizer> customizers) {
         return new CompositeCustomizer<>(customizers);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TimeLimiterProperties timeLimiterProperties() {
+        return new TimeLimiterProperties();
     }
 
     @Bean

@@ -54,6 +54,11 @@ import java.util.stream.Collectors;
 public class TimeLimiterConfiguration {
 
     @Bean
+    public TimeLimiterConfigurationProperties timeLimiterConfigurationProperties() {
+        return new TimeLimiterConfigurationProperties();
+    }
+
+    @Bean
     @Qualifier("compositeTimeLimiterCustomizer")
     public CompositeCustomizer<TimeLimiterConfigCustomizer> compositeTimeLimiterCustomizer(
         @Autowired(required = false) List<TimeLimiterConfigCustomizer> customizers) {

@@ -61,11 +61,6 @@ public class TestApplication {
     }
 
     @Bean
-    public TimeLimiterConfigurationProperties timeLimiterConfigurationProperties() {
-        return new TimeLimiterConfigurationProperties();
-    }
-
-    @Bean
     public TimerConfigurationProperties timerConfigurationProperties() {
         return new TimerConfigurationProperties();
     }

@@ -60,6 +60,12 @@ public abstract class AbstractTimeLimiterConfigurationOnMissingBean {
 
     @Bean
     @ConditionalOnMissingBean
+    public TimeLimiterProperties timeLimiterProperties() {
+        return new TimeLimiterProperties();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public TimeLimiterRegistry timeLimiterRegistry(
         TimeLimiterConfigurationProperties timeLimiterProperties,
         EventConsumerRegistry<TimeLimiterEvent> timeLimiterEventsConsumerRegistry,

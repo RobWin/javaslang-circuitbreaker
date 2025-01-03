@@ -58,10 +58,4 @@ public class TestApplication {
     public RetryConfigurationProperties retryConfigurationProperties() {
         return new RetryConfigurationProperties();
     }
-
-    @Bean
-    public TimeLimiterConfigurationProperties timeLimiterConfigurationProperties() {
-        return new TimeLimiterConfigurationProperties();
-    }
-
 }

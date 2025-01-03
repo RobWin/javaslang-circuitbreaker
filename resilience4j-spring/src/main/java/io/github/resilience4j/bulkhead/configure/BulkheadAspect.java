@@ -229,7 +229,20 @@ public class BulkheadAspect implements Ordered {
             logger.debug("ThreadPool bulkhead invocation for method {} in backend {}", methodName,
                 backend);
         }
+
         ThreadPoolBulkhead threadPoolBulkhead = threadPoolBulkheadRegistry.bulkhead(backend);
+        if (bulkheadAspectExts != null && !bulkheadAspectExts.isEmpty()) {
+            for (BulkheadAspectExt bulkheadAspectExt : bulkheadAspectExts) {
+                if (bulkheadAspectExt.canHandleReturnType(returnType)) {
+                    return bulkheadAspectExt.handle(
+                            proceedingJoinPoint,
+                            bulkheadRegistry.bulkhead(backend),
+                            methodName
+                    );
+                }
+            }
+        }
+
         if (CompletionStage.class.isAssignableFrom(returnType)) {
             // threadPoolBulkhead.executeSupplier throws a BulkheadFullException, if the Bulkhead is full.
             // The RuntimeException is converted into an exceptionally completed future
@@ -256,7 +269,6 @@ public class BulkheadAspect implements Ordered {
                 "ThreadPool bulkhead is only applicable for completable futures ");
         }
     }
-
 
     @Override
     public int getOrder() {
