@@ -66,6 +66,7 @@ dependencies {
         api project(":resilience4j-spring-boot2")
         api project(":resilience4j-spring-boot3")
         api project(":resilience4j-spring-cloud2")
+        api project(":resilience4j-spring-cloud3")
         api project(":resilience4j-feign")
         api project(":resilience4j-timelimiter")
         api project(":resilience4j-rxjava2")

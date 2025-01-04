@@ -1,0 +1,18 @@
+dependencies {
+    implementation project(':resilience4j-spring-boot3')
+
+    compileOnly(libraries.spring_cloud_context3)
+    compileOnly(libraries.spring_boot3_config_processor)
+    compileOnly(libraries.spring_boot3_autoconfigure_processor)
+    compileOnly(libraries.spring_boot3_actuator)
+
+    testImplementation(libraries.spring_boot3_test)
+    testImplementation(libraries.spring_boot3_aop)
+    testImplementation(libraries.spring_boot3_web)
+    testImplementation(libraries.spring_boot3_actuator)
+    testImplementation(libraries.spring_cloud_context3)
+    testImplementation project(':resilience4j-spring-boot3')
+}
+
+compileJava.dependsOn(processResources)
+ext.moduleName = 'io.github.resilience4j.springcloud3'
