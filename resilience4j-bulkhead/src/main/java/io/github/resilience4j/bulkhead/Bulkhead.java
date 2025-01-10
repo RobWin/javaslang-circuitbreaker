@@ -368,6 +368,13 @@ public interface Bulkhead {
     boolean tryAcquirePermission();
 
     /**
+     * Tries to acquire a permission without waiting
+     *
+     * @return {@code true} if a permission was acquired and {@code false} otherwise
+     */
+    boolean tryAcquirePermissionNoWait();
+
+    /**
      * Acquires a permission to execute a call, only if one is available at the time of invocation
      * If the current thread is {@linkplain Thread#interrupt interrupted} while waiting for a permit
      * then it won't throw {@linkplain InterruptedException}, but its interrupt status will be set.

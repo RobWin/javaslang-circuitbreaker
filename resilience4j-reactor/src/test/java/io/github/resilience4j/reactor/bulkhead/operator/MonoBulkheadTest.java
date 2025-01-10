@@ -19,11 +19,13 @@ import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.bulkhead.BulkheadFullException;
 import org.junit.Before;
 import org.junit.Test;
+import org.testng.annotations.BeforeMethod;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.UUID;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -35,6 +37,7 @@ public class MonoBulkheadTest {
     @Before
     public void setUp() {
         bulkhead = mock(Bulkhead.class, RETURNS_DEEP_STUBS);
+        given(bulkhead.getName()).willReturn(UUID.randomUUID().toString());
     }
 
     @Test

@@ -24,6 +24,7 @@ import reactor.test.StepVerifier;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.UUID;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -36,6 +37,7 @@ public class FluxBulkheadTest {
     @Before
     public void setUp() {
         bulkhead = mock(Bulkhead.class, RETURNS_DEEP_STUBS);
+        given(bulkhead.getName()).willReturn(UUID.randomUUID().toString());
     }
 
     @Test
@@ -110,7 +112,7 @@ public class FluxBulkheadTest {
     }
 
     @Test
-    public void shouldReleaseBulkheadSemaphoreOnCancel() {
+    public void shouldInvokeOnCompleteOnCancelAfterSubscription() {
         given(bulkhead.tryAcquirePermission()).willReturn(true);
 
         StepVerifier.create(
@@ -121,7 +123,8 @@ public class FluxBulkheadTest {
             .thenCancel()
             .verify();
 
-        verify(bulkhead, times(1)).releasePermission();
+        verify(bulkhead, never()).releasePermission();
+        verify(bulkhead, times(1)).onComplete();
     }
 
     @Test

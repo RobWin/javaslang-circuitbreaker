@@ -154,6 +154,18 @@ public class SemaphoreBulkhead implements Bulkhead {
         return callPermitted;
     }
 
+    @Override
+    public boolean tryAcquirePermissionNoWait() {
+       boolean callPermitted = semaphore.tryAcquire();
+
+        publishBulkheadEvent(
+            () -> callPermitted ? new BulkheadOnCallPermittedEvent(name)
+                : new BulkheadOnCallRejectedEvent(name)
+        );
+
+        return callPermitted;
+    }
+
     /**
      * {@inheritDoc}
      */

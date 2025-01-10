@@ -17,11 +17,14 @@ package io.github.resilience4j.reactor.bulkhead.operator;
 
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.bulkhead.BulkheadFullException;
+import io.github.resilience4j.core.registry.InMemoryRegistryStore;
 import io.github.resilience4j.reactor.IllegalPublisherException;
+import io.github.resilience4j.reactor.bulkhead.ReactiveBulkhead;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 
 /**
@@ -33,10 +36,14 @@ import java.util.function.UnaryOperator;
  */
 public class BulkheadOperator<T> implements UnaryOperator<Publisher<T>> {
 
-    private final Bulkhead bulkhead;
+    private final ReactiveBulkhead reactiveBulkhead;
 
-    private BulkheadOperator(Bulkhead bulkhead) {
-        this.bulkhead = bulkhead;
+    private static final InMemoryRegistryStore<ReactiveBulkhead> reactiveBulkheadStore
+        = new InMemoryRegistryStore<>();
+
+
+    private BulkheadOperator(ReactiveBulkhead reactiveBulkhead) {
+        this.reactiveBulkhead = reactiveBulkhead;
     }
 
     /**
@@ -47,17 +54,33 @@ public class BulkheadOperator<T> implements UnaryOperator<Publisher<T>> {
      * @return a BulkheadOperator
      */
     public static <T> BulkheadOperator<T> of(Bulkhead bulkhead) {
-        return new BulkheadOperator<>(bulkhead);
+        return new BulkheadOperator<>(reactiveBulkheadStore.computeIfAbsent(bulkhead.getName(), name -> new ReactiveBulkhead(bulkhead)));
     }
 
     @Override
     public Publisher<T> apply(Publisher<T> publisher) {
         if (publisher instanceof Mono) {
-            return new MonoBulkhead<>((Mono<? extends T>) publisher, bulkhead);
-        } else if (publisher instanceof Flux) {
-            return new FluxBulkhead<>((Flux<? extends T>) publisher, bulkhead);
-        } else {
-            throw new IllegalPublisherException(publisher);
+            return Mono.usingWhen(
+                reactiveBulkhead.acquirePermission(),
+                permission -> (Mono<? extends T>)publisher,
+                reactiveBulkhead::releasePermission,
+                (permission, t) -> reactiveBulkhead.releasePermission(permission),
+                permission -> reactiveBulkhead.releasePermission(permission, false)
+            );
         }
+
+        if (publisher instanceof Flux) {
+            AtomicBoolean atomicBoolean = new AtomicBoolean(false);
+            return Flux.usingWhen(
+                reactiveBulkhead.acquirePermission(),
+                permission -> ((Flux<? extends  T>)publisher)
+                    .doOnSubscribe(s -> atomicBoolean.getAndSet(true)),
+                reactiveBulkhead::releasePermission,
+                (permission, t) -> reactiveBulkhead.releasePermission(permission),
+                permission -> reactiveBulkhead.releasePermission(permission, atomicBoolean.get())
+            );
+        }
+
+        throw new IllegalPublisherException(publisher);
     }
 }
