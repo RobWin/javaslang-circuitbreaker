@@ -26,6 +26,7 @@ import io.github.resilience4j.ratelimiter.event.RateLimiterOnFailureEvent;
 import io.github.resilience4j.ratelimiter.event.RateLimiterOnSuccessEvent;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,6 +36,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static java.lang.System.nanoTime;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
@@ -125,10 +127,25 @@ public class SemaphoreBasedRateLimiter implements RateLimiter {
     }
 
     private ScheduledFuture<?> scheduleLimitRefresh() {
+        Instant startedTime = this.rateLimiterConfig.get().getStartedTime();
+        long refreshPeriodNano = this.rateLimiterConfig.get().getLimitRefreshPeriod().toNanos();
+
+        if (startedTime == null) {
+            return scheduler.scheduleAtFixedRate(
+                    this::refreshLimit,
+                    refreshPeriodNano,
+                    refreshPeriodNano,
+                    TimeUnit.NANOSECONDS
+            );
+        }
+
+        long elapsedNano = nanoTime() - startedTime.getNano();
+        long initialDelayNano = refreshPeriodNano - (elapsedNano % refreshPeriodNano);
+
         return scheduler.scheduleAtFixedRate(
             this::refreshLimit,
-            this.rateLimiterConfig.get().getLimitRefreshPeriod().toNanos(),
-            this.rateLimiterConfig.get().getLimitRefreshPeriod().toNanos(),
+            initialDelayNano,
+            refreshPeriodNano,
             TimeUnit.NANOSECONDS
         );
     }

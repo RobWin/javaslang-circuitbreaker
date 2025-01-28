@@ -28,6 +28,8 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -101,6 +103,49 @@ public class SemaphoreBasedRateLimiterImplTest extends RateLimitersImplementatio
         then(limit.acquirePermission()).isFalse();
 
         Thread.sleep(REFRESH_PERIOD.toMillis() * 2);
+        verify(configSpy, times(1)).getLimitForPeriod();
+
+        refreshLimitRunnable.run();
+
+        verify(configSpy, times(2)).getLimitForPeriod();
+
+        then(limit.acquirePermission()).isTrue();
+        then(limit.acquirePermission()).isTrue();
+        then(limit.acquirePermission()).isFalse();
+
+    }
+
+    @Test
+    public void rateLimiterCreationWithProvidedSchedulerStartedTime() throws Exception {
+        ScheduledExecutorService scheduledExecutorService = mock(ScheduledExecutorService.class);
+        config = RateLimiterConfig.from(config)
+                .startedTime(Instant.now().truncatedTo(ChronoUnit.SECONDS))
+                .build();
+        RateLimiterConfig configSpy = spy(config);
+        SemaphoreBasedRateLimiter limit = new SemaphoreBasedRateLimiter("test", configSpy,
+                scheduledExecutorService);
+
+        ArgumentCaptor<Runnable> refreshLimitRunnableCaptor = ArgumentCaptor
+                .forClass(Runnable.class);
+        ArgumentCaptor<Long> startedTimeInitialDelayNanoCaptor = ArgumentCaptor.forClass(Long.class);
+        verify(scheduledExecutorService)
+                .scheduleAtFixedRate(
+                        refreshLimitRunnableCaptor.capture(),
+                        startedTimeInitialDelayNanoCaptor.capture(),
+                        eq(config.getLimitRefreshPeriod().toNanos()),
+                        eq(TimeUnit.NANOSECONDS)
+                );
+
+        Runnable refreshLimitRunnable = refreshLimitRunnableCaptor.getValue();
+        long startedTimeInitialDelayNano = startedTimeInitialDelayNanoCaptor.getValue();
+
+        then(startedTimeInitialDelayNano).isLessThan(REFRESH_PERIOD.getNano());
+        then(startedTimeInitialDelayNano).isGreaterThan(0L);
+        then(limit.acquirePermission()).isTrue();
+        then(limit.acquirePermission()).isTrue();
+        then(limit.acquirePermission()).isFalse();
+
+        Thread.sleep(Duration.ofNanos(startedTimeInitialDelayNano).plus(REFRESH_PERIOD).toMillis());
         verify(configSpy, times(1)).getLimitForPeriod();
 
         refreshLimitRunnable.run();

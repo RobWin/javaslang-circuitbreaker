@@ -25,6 +25,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -63,7 +64,8 @@ public class AtomicRateLimiter implements RateLimiter {
                              Map<String, String> tags) {
         this.name = name;
         this.tags = tags;
-        this.nanoTimeStart = nanoTime();
+        Instant startedTime = rateLimiterConfig.getStartedTime();
+        this.nanoTimeStart = startedTime != null ? startedTime.getNano() : nanoTime();
 
         waitingThreads = new AtomicInteger(0);
         state = new AtomicReference<>(new State(

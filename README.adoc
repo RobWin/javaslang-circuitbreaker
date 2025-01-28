@@ -251,7 +251,8 @@ Find out more in our *https://resilience4j.readme.io/docs/getting-started-1[User
 [[ratelimiter]]
 === RateLimiter
 
-The following example shows how to restrict the calling rate of some method to be not higher than 1 request/second.
+The following example shows how to restrict the calling rate of some method to be not higher than 1 request/second
+and refresh period on every second.
 
 [source,java]
 ----
@@ -260,6 +261,7 @@ RateLimiterConfig config = RateLimiterConfig.custom()
     .timeoutDuration(Duration.ofMillis(100))
     .limitRefreshPeriod(Duration.ofSeconds(1))
     .limitForPeriod(1)
+    .startedTime(Instant.now().truncatedTo(ChronoUnit.SECONDS))
     .build();
 // Create a RateLimiter
 RateLimiter rateLimiter = RateLimiter.of("backendName", config);

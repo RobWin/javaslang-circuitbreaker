@@ -25,6 +25,8 @@ import org.junit.internal.matchers.ThrowableCauseMatcher;
 import org.junit.rules.ExpectedException;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.function.Predicate;
 
 import static org.assertj.core.api.BDDAssertions.then;
@@ -36,10 +38,12 @@ public class RateLimiterConfigTest {
     private static final int LIMIT = 50;
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
     private static final Duration REFRESH_PERIOD = Duration.ofNanos(500);
+    private static final Instant STARTED_TIME = Instant.now().truncatedTo(ChronoUnit.MICROS);
     private static final Predicate<Either<? extends Throwable, ?>> DRAIN_CONDITION_CHECKER = result -> false;
     private static final String TIMEOUT_DURATION_MUST_NOT_BE_NULL = "TimeoutDuration must not be null";
     private static final String TIMEOUT_DURATION_MUST_NOT_BE_NEGATIVE = "TimeoutDuration must not be negative";
     private static final String REFRESH_PERIOD_MUST_NOT_BE_NULL = "RefreshPeriod must not be null";
+    private static final String STARTED_TIME_MUST_NOT_BE_NULL = "StartedTime must not be null";
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -51,12 +55,14 @@ public class RateLimiterConfigTest {
             .timeoutDuration(TIMEOUT)
             .limitRefreshPeriod(REFRESH_PERIOD)
             .limitForPeriod(LIMIT)
+            .startedTime(STARTED_TIME)
             .drainPermissionsOnResult(DRAIN_CONDITION_CHECKER)
             .build();
 
         then(config.getLimitForPeriod()).isEqualTo(LIMIT);
         then(config.getLimitRefreshPeriod()).isEqualTo(REFRESH_PERIOD);
         then(config.getTimeoutDuration()).isEqualTo(TIMEOUT);
+        then(config.getStartedTime()).isEqualTo(STARTED_TIME);
         then(config.getDrainPermissionsOnResult()).isEqualTo(DRAIN_CONDITION_CHECKER);
     }
 
@@ -126,5 +132,21 @@ public class RateLimiterConfigTest {
         exception.expectMessage("LimitRefreshPeriod too large");
         RateLimiterConfig.custom()
             .limitRefreshPeriod(Duration.ofSeconds(Long.MAX_VALUE));
+    }
+
+    @Test
+    public void builderStartedTimeIsNull() {
+        exception.expect(NullPointerException.class);
+        exception.expectMessage(STARTED_TIME_MUST_NOT_BE_NULL);
+        RateLimiterConfig.custom()
+                .startedTime(null);
+    }
+
+    @Test
+    public void builderStartedTimeAfterNow() throws Exception {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage("StartedTime should be earlier or equal than now");
+        RateLimiterConfig.custom()
+                .startedTime(Instant.now().plusSeconds(600L));
     }
 }

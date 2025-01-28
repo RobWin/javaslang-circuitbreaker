@@ -28,12 +28,15 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.jayway.awaitility.Awaitility.await;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -91,6 +94,49 @@ public class AtomicRateLimiterTest extends RateLimitersImplementationTest {
 
         AtomicRateLimiter.AtomicRateLimiterMetrics rawDetailedMetrics = rawLimiter
             .getDetailedMetrics();
+
+        long firstCycle = waitForCurrentCycleToPass(rawDetailedMetrics, '.');
+
+        boolean firstPermission = rawLimiter.acquirePermission();
+        then(firstPermission).isTrue();
+
+        waitForPermissionRenewal(rawDetailedMetrics, '*');
+
+        boolean secondPermission = rawLimiter.acquirePermission();
+        then(secondPermission).isTrue();
+
+        boolean firstNoPermission = rawLimiter.acquirePermission();
+        then(firstNoPermission).isFalse();
+        long secondCycle = rawDetailedMetrics.getCycle();
+
+        rawLimiter.changeLimitForPeriod(PERMISSIONS_RER_CYCLE * 2);
+        waitForPermissionRenewal(rawDetailedMetrics, '^');
+        boolean thirdPermission = rawLimiter.acquirePermission();
+        then(thirdPermission).isTrue();
+
+        boolean fourthPermission = rawLimiter.acquirePermission();
+        then(fourthPermission).isTrue();
+
+        boolean secondNoPermission = rawLimiter.acquirePermission();
+        then(secondNoPermission).isFalse();
+        long thirdCycle = rawDetailedMetrics.getCycle();
+
+        then(secondCycle - firstCycle).isEqualTo(2);
+        then(thirdCycle - secondCycle).isEqualTo(1);
+    }
+
+    @Test
+    public void notSpyRawStartedTimeTest() {
+        RateLimiterConfig rateLimiterConfig = RateLimiterConfig.custom()
+                .limitForPeriod(PERMISSIONS_RER_CYCLE)
+                .limitRefreshPeriod(Duration.ofNanos(CYCLE_IN_NANOS))
+                .startedTime(Instant.now().truncatedTo(ChronoUnit.MICROS))
+                .timeoutDuration(Duration.ZERO)
+                .build();
+        AtomicRateLimiter rawLimiter = new AtomicRateLimiter("rawLimiter", rateLimiterConfig);
+
+        AtomicRateLimiter.AtomicRateLimiterMetrics rawDetailedMetrics = rawLimiter
+                .getDetailedMetrics();
 
         long firstCycle = waitForCurrentCycleToPass(rawDetailedMetrics, '.');
 
