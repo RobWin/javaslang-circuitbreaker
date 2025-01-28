@@ -23,9 +23,20 @@ package io.github.resilience4j.ratelimiter;
  * RateLimiter}.
  */
 public class RequestNotPermitted extends RuntimeException {
+    private final String rateLimiterName;
 
-    private RequestNotPermitted(String message, boolean writableStackTrace) {
+    private RequestNotPermitted(String message, boolean writableStackTrace, String rateLimiterName) {
         super(message, null, false, writableStackTrace);
+        this.rateLimiterName = rateLimiterName;
+    }
+
+    /**
+     * Returns the name of the RateLimiter that caused this exception.
+     *
+     * @return the name of the RateLimiter
+     */
+    public String getCausingRateLimiterName() {
+        return rateLimiterName;
     }
 
     /**
@@ -37,9 +48,10 @@ public class RequestNotPermitted extends RuntimeException {
         boolean writableStackTraceEnabled = rateLimiter.getRateLimiterConfig()
             .isWritableStackTraceEnabled();
 
+        String name = rateLimiter.getName();
         String message = String
-            .format("RateLimiter '%s' does not permit further calls", rateLimiter.getName());
+            .format("RateLimiter '%s' does not permit further calls", name);
 
-        return new RequestNotPermitted(message, writableStackTraceEnabled);
+        return new RequestNotPermitted(message, writableStackTraceEnabled, name);
     }
 }

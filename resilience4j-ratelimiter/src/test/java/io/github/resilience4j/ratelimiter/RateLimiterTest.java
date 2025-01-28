@@ -304,4 +304,13 @@ public class RateLimiterTest {
         RateLimiter rateLimiter = RateLimiter.of("test", () -> config);
         assertThat(rateLimiter).isNotNull();
     }
+
+    @Test
+    public void testRequestNotPermittedRateLimiterName() {
+        given(limit.getName()).willReturn("testLimiterName");
+
+        RequestNotPermitted exception = RequestNotPermitted.createRequestNotPermitted(limit);
+
+        assertThat(exception.getCausingRateLimiterName()).isEqualTo("testLimiterName");
+    }
 }
